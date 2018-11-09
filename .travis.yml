@@ -23,7 +23,9 @@ install:
     - if [ "$deps" = "standard" ]; then composer --prefer-stable --prefer-dist -n update; fi;
     - if [ "$deps" = "low" ]; then composer --prefer-lowest -n --prefer-stable --prefer-dist update; fi;
 
-script: vendor/bin/phpunit
+script:
+    - vendor/bin/phpunit -c .
+    - vendor/bin/phpstan.phar analyse -c phpstan.neon --level 7 .
 
 notifications:
     email: "douglas@usemarkup.com"
