@@ -1,0 +1,11 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Markup\ElasticsearchBundle\:
+        resource: '../../*'
+
+    markup_elasticsearch.client:
+        factory: ['@Markup\ElasticsearchBundle\ClientFactory', 'create']

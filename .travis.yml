@@ -1,0 +1,29 @@
+language: php
+
+matrix:
+    include:
+        - php: 7.1
+          env: deps=low
+        - php: 7.1
+        - php: 7.2
+        - php: 7.3
+        - php: nightly
+    allow_failures:
+        - php: nightly
+
+sudo: false
+dist: trusty
+
+env:
+    global:
+        - deps=standard
+
+install:
+    - composer self-update -q
+    - if [ "$deps" = "standard" ]; then composer --prefer-stable --prefer-dist -n update; fi;
+    - if [ "$deps" = "low" ]; then composer --prefer-lowest -n --prefer-stable --prefer-dist update; fi;
+
+script: vendor/bin/phpunit
+
+notifications:
+    email: "douglas@usemarkup.com"
