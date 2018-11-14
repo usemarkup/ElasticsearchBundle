@@ -54,6 +54,9 @@ class Configuration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
+                ->scalarNode('logger')
+                    ->defaultValue('logger')
+                ->end()
             ->end();
 
         return $treeBuilder;
