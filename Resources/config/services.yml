@@ -6,6 +6,3 @@ services:
 
     Markup\ElasticsearchBundle\:
         resource: '../../*'
-
-    markup_elasticsearch.client:
-        factory: ['@Markup\ElasticsearchBundle\ClientFactory', 'create']
