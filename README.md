@@ -2,8 +2,9 @@
 
 [![Build Status](https://travis-ci.org/usemarkup/ElasticsearchBundle.svg)](https://travis-ci.org/usemarkup/ElasticsearchBundle)
 [![Latest Stable Version](https://img.shields.io/packagist/v/markup/elasticsearch-bundle.svg)](https://packagist.org/packages/markup/elasticsearch-bundle)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Symfony bundle providing simple integration with the Elasticsearch SDK, also providing web profiler information.
+A Symfony bundle providing simple integration with the [Elasticsearch PHP SDK](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/index.html), also providing web profiler information.
 
 ## Installation
 
@@ -33,3 +34,61 @@ class AppKernel extends Kernel
     ...
 }
 ```
+
+## Configuration
+
+The configuration options for individual Elasticsearch client services are determined by the [extended configuration](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_configuration.html#_extended_host_configuration) defined by the Elasticsearch PHP SDK. No validation is performed at compile time.
+
+### Sample YAML configuration
+
+In the simplest case, a client service (in this case, `markup_elasticsearch.client.simple`) can be declared by just declaring a client name.
+
+```yaml
+markup_elasticsearch:
+    clients:
+        simple: ~
+```
+
+This will set up one connection node for that client, at the default location of `http://localhost:9200/`.
+
+For a more complex case with explicit defined node(s), these can be defined explicitly (creating here a service called `markup_elasticsearch.client.complex`):
+
+```yaml
+markup_elasticsearch:
+    clients:
+        complex:
+            nodes:
+                - host: 8.8.8.8
+                  port: 9201
+                  scheme: https
+                  user: i_am_a_user
+                  pass: i_am_a_super_secret_password
+                - host: 10.0.3.4
+                  scheme: https
+                  user: i_am_another_user
+                  pass: pss_dont_tell_i_am_a_password
+```
+
+This will define a client with two nodes, one at `https://i_am_a_user:i_am_a_super_secret_password@8.8.8.8:9201/` and one at `https://i_am_another_user:pss_dont_tell_i_am_a_password@10.0.3.4:9200/`.
+
+## Usage
+
+Clients as defined above are provided as instances of \Elasticsearch\Client. Usage from that point is as per the [Elasticsearch PHP SDK documentation](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_quickstart.html).
+
+For example, to inject a configured Elasticsearch client into a service at `My\SearchService`, sample YAML configuration might look like:
+
+```yaml
+My\SearchService:
+    arguments:
+        - '@markup_elasticsearch.client.my_client'
+```
+
+The client services are defined as private, and therefore require to be injected into e.g. controllers and other services.
+
+## Links
+
+* [Elasticsearch PHP SDK on GitHub](https://github.com/elastic/elasticsearch-php)
+* [Elasticsearch PHP SDK on elastic.co](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/index.html)
+* [Elasticsearch PHP SDK on Packagist](https://packagist.org/packages/elasticsearch/elasticsearch)
+* [License (MIT)](https://opensource.org/licenses/MIT)
+* [Symfony website](http://symfony.com/)

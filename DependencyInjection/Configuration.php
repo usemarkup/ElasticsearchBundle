@@ -20,9 +20,41 @@ class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('markup_elasticsearch');
 
-        // Here you should define the parameters that are allowed to
-        // configure your bundle. See the documentation linked above for
-        // more information on that topic.
+        $rootNode
+            ->addDefaultsIfNotSet()
+            ->children()
+                ->arrayNode('clients')
+                    ->useAttributeAsKey('name')
+                    ->arrayPrototype()
+                        ->children()
+                            ->arrayNode('nodes')
+                                ->beforeNormalization()
+                                    ->castToArray()
+                                ->end()
+                                ->arrayPrototype()
+                                    ->children()
+                                        ->scalarNode('host')
+                                            ->defaultValue('localhost')
+                                        ->end()
+                                        ->integerNode('port')
+                                            ->defaultValue(9200)
+                                        ->end()
+                                        ->scalarNode('scheme')
+                                            ->defaultValue('http')
+                                        ->end()
+                                        ->scalarNode('user')
+                                            ->defaultNull()
+                                        ->end()
+                                        ->scalarNode('pass')
+                                            ->defaultNull()
+                                        ->end()
+                                    ->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
 
         return $treeBuilder;
     }

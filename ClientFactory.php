@@ -28,11 +28,15 @@ class ClientFactory
         $this->tracer = $tracer ?? new NullLogger();
     }
 
-    public function create(): Client
+    public function create(array $hosts = []): Client
     {
-        return ClientBuilder::create()
+        $clientBuilder = ClientBuilder::create()
             ->setLogger($this->logger)
-            ->setTracer($this->tracer)
-            ->build();
+            ->setTracer($this->tracer);
+        if (count($hosts) > 0) {
+            $clientBuilder->setHosts($hosts);
+        }
+
+        return $clientBuilder->build();
     }
 }
