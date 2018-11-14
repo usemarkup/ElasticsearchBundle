@@ -2,6 +2,7 @@
     "name": "markup/elasticsearch-bundle",
     "description": "A Symfony bundle providing simple integration with the Elasticsearch SDK, also providing web profiler information.",
     "type": "symfony-bundle",
+    "keywords": ["elasticsearch", "client", "symfony", "bundle", "search"],
     "require": {
         "php": "^7.1",
         "elasticsearch/elasticsearch": "^6",
