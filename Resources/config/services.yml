@@ -6,3 +6,6 @@ services:
 
     Markup\ElasticsearchBundle\:
         resource: '../../*'
+
+    Markup\ElasticsearchBundle\ServiceLocator:
+        tags: [container.service_locator]

@@ -4,6 +4,7 @@ namespace Markup\ElasticsearchBundle\DependencyInjection;
 
 use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
+use Markup\ElasticsearchBundle\ServiceLocator;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -12,12 +13,12 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 
 /**
- * This is the class that loads and manages your bundle configuration.
- *
- * @link http://symfony.com/doc/current/cookbook/bundles/extension.html
+ * Loads configuration for bundle.
  */
 class MarkupElasticsearchExtension extends Extension
 {
+    use AddServiceLocatorArgumentTrait;
+
     /**
      * {@inheritdoc}
      */
@@ -30,6 +31,7 @@ class MarkupElasticsearchExtension extends Extension
         $loader->load('services.yml');
 
         $this->configureClients($config, $container);
+        $this->configureGeneralServices($config, $container);
         $this->configureTracerLogger($config, $container);
     }
 
@@ -41,6 +43,15 @@ class MarkupElasticsearchExtension extends Extension
                 ->setArguments([$clientConfig['nodes']])
                 ->setPrivate(true);
             $container->setDefinition(sprintf('markup_elasticsearch.client.%s', $clientName), $client);
+        }
+    }
+
+    private function configureGeneralServices(array $config, ContainerBuilder $container)
+    {
+        $nodesForServices = ['logger'];
+        $locator = $container->findDefinition(ServiceLocator::class);
+        foreach ($nodesForServices as $nodeForService) {
+            $this->registerServiceToLocator($nodeForService, $config[$nodeForService], $locator);
         }
     }
 
