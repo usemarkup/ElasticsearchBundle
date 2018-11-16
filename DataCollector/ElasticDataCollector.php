@@ -28,14 +28,14 @@ class ElasticDataCollector extends DataCollector
         // data is collected separately
     }
 
-    public function addRequest(array $payload)
+    public function addRequest(array $payload, string $interactionId)
     {
-        $this->data['requests'][] = $payload;
+        $this->data['requests'][$interactionId] = $payload;
     }
 
-    public function addResponse(array $payload)
+    public function addResponse(array $payload, string $interactionId)
     {
-        $this->data['responses'][] = $payload;
+        $this->data['responses'][$interactionId] = $payload;
     }
 
     public function getInteractions(): array
