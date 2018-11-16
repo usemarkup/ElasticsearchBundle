@@ -5,6 +5,7 @@ namespace Markup\ElasticsearchBundle\DependencyInjection;
 use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
 use Markup\ElasticsearchBundle\ServiceLocator;
+use Markup\ElasticsearchBundle\Twig\KibanaLinkExtension;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -32,7 +33,8 @@ class MarkupElasticsearchExtension extends Extension
 
         $this->configureClients($config, $container);
         $this->configureGeneralServices($config, $container);
-        $this->configureTracerLogger($config, $container);
+        $this->configureTracerLogger($container);
+        $this->registerKibanaServices($config['kibana'], $container);
     }
 
     private function configureClients(array $config, ContainerBuilder $container)
@@ -55,7 +57,7 @@ class MarkupElasticsearchExtension extends Extension
         }
     }
 
-    private function configureTracerLogger(array $config, ContainerBuilder $container)
+    private function configureTracerLogger(ContainerBuilder $container)
     {
         $collector = $container->findDefinition(ElasticDataCollector::class);
         $collector->addTag(
@@ -65,5 +67,15 @@ class MarkupElasticsearchExtension extends Extension
                 'template' => '@MarkupElasticsearch/Collector/elastic.html.twig',
             ]
         );
+    }
+
+    private function registerKibanaServices(array $config, ContainerBuilder $container)
+    {
+        if (!$container->getParameter('kernel.debug')) {
+            return;
+        }
+        $container->findDefinition(KibanaLinkExtension::class)->addTag('twig.extension');
+        $container->setParameter('markup_elasticsearch.kibana_host', $config['host']);
+        $container->setParameter('markup_elasticsearch.should_link_to_kibana', $config['should_link_from_profiler']);
     }
 }
