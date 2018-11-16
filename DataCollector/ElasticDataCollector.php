@@ -33,6 +33,11 @@ class ElasticDataCollector extends DataCollector
         $this->data['requests'][$interactionId] = $payload;
     }
 
+    public function addRequestBody(string $body, string $interactionId)
+    {
+        $this->data['request_bodies'][$interactionId] = $body;
+    }
+
     public function addResponse(array $payload, string $interactionId)
     {
         $this->data['responses'][$interactionId] = $payload;
@@ -40,20 +45,32 @@ class ElasticDataCollector extends DataCollector
 
     public function getInteractions(): array
     {
-        return array_map(
-            function ($request, $response) {
-                return [
-                    'request' => $request,
-                    'response' => $response['response'],
-                    'http_method' => $response['method'],
-                    'uri' => $response['uri'],
-                    'status_code' => $response['HTTP code'],
-                    'duration_in_ms' => $response['duration']*1000,
-                ];
-            },
-            $this->data['requests'],
-            $this->data['responses']
-        );
+        $interactions = [];
+        foreach (array_keys($this->data['requests']) as $interactionId) {
+            $interactions[$interactionId] = $this->getInteraction((string) $interactionId);
+        }
+
+        return $interactions;
+    }
+
+    public function getInteraction(string $interactionId): ?array
+    {
+        $request = $this->data['requests'][$interactionId] ?? null;
+        if (null === $request) {
+            return null;
+        }
+        $response = $this->data['responses'][$interactionId] ?? null;
+        $requestBody = $this->data['request_bodies'][$interactionId] ?? null;
+
+        return [
+            'requests' => $request,
+            'response' => $response['response'],
+            'http_method' => $response['method'],
+            'uri' => $response['uri'],
+            'status_code' => $response['HTTP code'],
+            'duration_in_ms' => $response['duration']*1000,
+            'request_body' => $requestBody,
+        ];
     }
 
     /**
@@ -71,6 +88,7 @@ class ElasticDataCollector extends DataCollector
         $this->data = [
             'requests' => [],
             'responses' => [],
+            'request_bodies' => [],
         ];
     }
 }

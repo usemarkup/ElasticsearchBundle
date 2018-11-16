@@ -44,7 +44,8 @@ class TracerLogger implements LoggerInterface
 
         if ($level === LogLevel::INFO && substr($message, 0, 4) === 'curl') {
             //capture last part of curl command, which is payload as JSON
-            $payloadJsonStrings = explode("\n", substr($message, strpos($message, '-d ')+4, -1));
+            $messageBody = substr($message, strpos($message, '-d ')+4, -1);
+            $payloadJsonStrings = explode("\n", $messageBody);
             $this->collector->addRequest(
                 array_map(
                     function (string $json) {
@@ -62,6 +63,7 @@ class TracerLogger implements LoggerInterface
             );
             $this->addToInteractionIds($interactionId);
 
+            $this->collector->addRequestBody($messageBody, $interactionId);
             return;
         }
 

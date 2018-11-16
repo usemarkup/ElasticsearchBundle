@@ -1,0 +1,4 @@
+markup_elasticsearch_json_for_kibana:
+    path: /{token}/elasticsearch/{interactionId}.json
+    defaults: { _controller: 'Markup\ElasticsearchBundle\Controller\KibanaConsoleJsonController::viewConsoleJson' }
+    methods: [GET]

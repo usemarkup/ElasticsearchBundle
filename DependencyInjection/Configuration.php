@@ -57,6 +57,17 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode('logger')
                     ->defaultValue('logger')
                 ->end()
+                ->arrayNode('kibana')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('host')
+                            ->defaultValue('http://localhost:5601')
+                        ->end()
+                        ->booleanNode('should_link_from_profiler')
+                            ->defaultFalse()
+                        ->end()
+                    ->end()
+                ->end()
             ->end();
 
         return $treeBuilder;
