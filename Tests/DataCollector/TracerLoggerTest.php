@@ -55,11 +55,11 @@ class TracerLoggerTest extends MockeryTestCase
 
     public function testLogForResponsePayload()
     {
+        $this->logger->info($this->getTestCurlCommand());
         $payload = [
             'this' => 'that',
             'stuff' => 'things',
         ];
-
         $this->logger->debug('Response:', $payload);
 
         $this->collector
