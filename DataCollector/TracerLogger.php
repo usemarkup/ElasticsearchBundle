@@ -12,6 +12,11 @@ use Psr\Log\LogLevel;
 /**
  * A PSR-3 logger that can be set within the Elasticsearch client object as a tracer, and provide output
  * to a Symfony data collector for the web profiler.
+ *
+ * NB. As there is no explicit association at the current time between requests and responses in
+ * terms of how the Elasticsearch SDK performs logging, responses here are associated with requests on a
+ * first in, first out basis. This means that, for now, multiple asynchronous requests could result in
+ * responses logged out of order.
  */
 class TracerLogger implements LoggerInterface
 {
@@ -22,9 +27,15 @@ class TracerLogger implements LoggerInterface
      */
     private $collector;
 
+    /**
+     * @var array - A first in, first out list of interaction IDs.
+     */
+    private $interactionIds;
+
     public function __construct(ElasticDataCollector $collector)
     {
         $this->collector = $collector;
+        $this->interactionIds = [];
     }
 
     public function log($level, $message, array $context = [])
@@ -49,11 +60,22 @@ class TracerLogger implements LoggerInterface
                 ),
                 $interactionId
             );
+            $this->addToInteractionIds($interactionId);
 
             return;
         }
 
         //assuming this is response...
-        $this->collector->addResponse($context, $interactionId);
+        $this->collector->addResponse($context, $this->takeFromInteractionIds());
+    }
+
+    private function addToInteractionIds(string $interactionId)
+    {
+        $this->interactionIds[] = $interactionId;
+    }
+
+    private function takeFromInteractionIds(): string
+    {
+        return array_shift($this->interactionIds);
     }
 }
