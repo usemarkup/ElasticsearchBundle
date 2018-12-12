@@ -3,9 +3,6 @@ services:
         autowire: true
         autoconfigure: true
         public: false
-        bind:
-            $kibanaHost: '%markup_elasticsearch.kibana_host%'
-            $shouldLinkToKibana: '%markup_elasticsearch.should_link_to_kibana%'
 
     Markup\ElasticsearchBundle\:
         resource: '../../*'

@@ -72,10 +72,13 @@ class MarkupElasticsearchExtension extends Extension
     private function registerKibanaServices(array $config, ContainerBuilder $container)
     {
         if (!$container->getParameter('kernel.debug')) {
+            $container->removeDefinition(KibanaLinkExtension::class);
+
             return;
         }
-        $container->findDefinition(KibanaLinkExtension::class)->addTag('twig.extension');
-        $container->setParameter('markup_elasticsearch.kibana_host', $config['host']);
-        $container->setParameter('markup_elasticsearch.should_link_to_kibana', $config['should_link_from_profiler']);
+        $definition = $container->findDefinition(KibanaLinkExtension::class);
+        $definition->setArgument('$kibanaHost', $config['host']);
+        $definition->setArgument('$shouldLinkToKibana', $config['should_link_from_profiler']);
+        $definition->addTag('twig.extension');
     }
 }
