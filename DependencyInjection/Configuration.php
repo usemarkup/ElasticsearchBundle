@@ -57,6 +57,8 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode('logger')
                     ->defaultValue('logger')
                 ->end()
+                ->integerNode('retries')
+                ->end()
                 ->arrayNode('kibana')
                     ->addDefaultsIfNotSet()
                     ->children()

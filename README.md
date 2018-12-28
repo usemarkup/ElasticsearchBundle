@@ -83,6 +83,15 @@ markup_elasticsearch:
 
 This will set up a default client as above, with the logger defined as the provided Symfony logger service ID `my_logger_service_id` (defaulting to `logger`), and the Kibana location (for running queries in [Kibana's Dev Tools interface](https://www.elastic.co/guide/en/kibana/current/devtools-kibana.html) from the Symfony web profiler) set as `https://kibana-host:5601` (and defaulting to `http://localhost:5061`). The link to Kibana within the Symfony web profiler is switched on by setting `should_link_from_profiler` to `true`.
 
+### General settings
+
+```yaml
+markup_needle:
+    retries: 2
+```
+
+- `retries` You can set the number of retries that the client will make against an Elasticsearch instance. If this number is not specified, the default behaviour is use the number of nodes in the cluster that a client is connecting to.
+
 ## Usage
 
 Clients as defined above are provided as instances of \Elasticsearch\Client. Usage from that point is as per the [Elasticsearch PHP SDK documentation](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_quickstart.html).
