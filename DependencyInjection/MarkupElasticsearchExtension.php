@@ -2,6 +2,7 @@
 
 namespace Markup\ElasticsearchBundle\DependencyInjection;
 
+use Composer\CaBundle\CaBundle;
 use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
 use Markup\ElasticsearchBundle\ServiceLocator;
@@ -43,7 +44,7 @@ class MarkupElasticsearchExtension extends Extension
         foreach ($config['clients'] as $clientName => $clientConfig) {
             $client = (new Definition(\Elasticsearch\Client::class))
                 ->setFactory([new Reference(ClientFactory::class), 'create'])
-                ->setArguments([$clientConfig['nodes']])
+                ->setArguments([$clientConfig['nodes'], $clientConfig['ssl_cert']])
                 ->setPrivate(true);
             $container->setDefinition(sprintf('markup_elasticsearch.client.%s', $clientName), $client);
         }
@@ -64,6 +65,7 @@ class MarkupElasticsearchExtension extends Extension
         if (isset($config['retries'])) {
             $clientFactory->setArgument('$retries', $config['retries']);
         }
+        $clientFactory->setArgument('$useCaBundle', class_exists(CaBundle::class));
     }
 
     private function configureTracerLogger(ContainerBuilder $container)

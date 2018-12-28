@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Markup\ElasticsearchBundle;
 
+use Composer\CaBundle\CaBundle;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 use Markup\ElasticsearchBundle\DataCollector\TracerLogger;
@@ -28,17 +29,24 @@ class ClientFactory
      */
     private $retries;
 
+    /**
+     * @var bool
+     */
+    private $useCaBundle;
+
     public function __construct(
         ServiceLocator $serviceLocator,
         ?TracerLogger $tracer = null,
-        ?int $retries = null
+        ?int $retries = null,
+        ?bool $useCaBundle = false
     ) {
         $this->serviceLocator = $serviceLocator;
         $this->tracer = $tracer ?? new NullLogger();
         $this->retries = $retries;
+        $this->useCaBundle = (bool) $useCaBundle;
     }
 
-    public function create(array $hosts = []): Client
+    public function create(array $hosts = [], ?string $sslCertFile = null): Client
     {
         $clientBuilder = ClientBuilder::create()
             ->setTracer($this->tracer);
@@ -50,6 +58,10 @@ class ClientFactory
         }
         if ($this->retries !== null) {
             $clientBuilder->setRetries($this->retries);
+        }
+        if ($this->useCaBundle) {
+            $cert = $sslCertFile ?? CaBundle::getBundledCaBundlePath();
+            $clientBuilder->setSSLVerification($cert);
         }
 
         return $clientBuilder->build();
