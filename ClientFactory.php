@@ -23,10 +23,19 @@ class ClientFactory
      */
     private $tracer;
 
-    public function __construct(ServiceLocator $serviceLocator, ?TracerLogger $tracer = null)
-    {
+    /**
+     * @var ?int
+     */
+    private $retries;
+
+    public function __construct(
+        ServiceLocator $serviceLocator,
+        ?TracerLogger $tracer = null,
+        ?int $retries = null
+    ) {
         $this->serviceLocator = $serviceLocator;
         $this->tracer = $tracer ?? new NullLogger();
+        $this->retries = $retries;
     }
 
     public function create(array $hosts = []): Client
@@ -38,6 +47,9 @@ class ClientFactory
         }
         if (count($hosts) > 0) {
             $clientBuilder->setHosts($hosts);
+        }
+        if ($this->retries !== null) {
+            $clientBuilder->setRetries($this->retries);
         }
 
         return $clientBuilder->build();

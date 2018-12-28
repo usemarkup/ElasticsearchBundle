@@ -33,6 +33,7 @@ class MarkupElasticsearchExtension extends Extension
 
         $this->configureClients($config, $container);
         $this->configureGeneralServices($config, $container);
+        $this->configureGeneralSettings($config, $container);
         $this->configureTracerLogger($container);
         $this->registerKibanaServices($config['kibana'], $container);
     }
@@ -54,6 +55,14 @@ class MarkupElasticsearchExtension extends Extension
         $locator = $container->findDefinition(ServiceLocator::class);
         foreach ($nodesForServices as $nodeForService) {
             $this->registerServiceToLocator($nodeForService, $config[$nodeForService], $locator);
+        }
+    }
+
+    private function configureGeneralSettings(array $config, ContainerBuilder $container)
+    {
+        $clientFactory = $container->findDefinition(ClientFactory::class);
+        if (isset($config['retries'])) {
+            $clientFactory->setArgument('$retries', $config['retries']);
         }
     }
 
