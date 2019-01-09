@@ -86,11 +86,37 @@ This will set up a default client as above, with the logger defined as the provi
 ### General settings
 
 ```yaml
-markup_needle:
+markup_elasticsearch:
     retries: 2
 ```
 
 - `retries` You can set the number of retries that the client will make against an Elasticsearch instance. If this number is not specified, the default behaviour is use the number of nodes in the cluster that a client is connecting to.
+
+### Connection pools
+
+You can define connection pools on a per-client basis, either using the `ConnectionPoolInterface` implementations from the Elasticsearch SDK, or a custom connection pool service.
+
+The built-in connection pools are `staticNoPing` (the default), `static`, `simple` and `sniffing`.
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_client:
+            connection_pool: sniffing
+```
+
+The above configuration will define a client `my_client` which uses the [in-built sniffing connection pool](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_connection_pool.html#_sniffingconnectionpool).
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_custom_client:
+            connection_pool: my_custom_pool
+    custom_connection_pools:
+        my_custom_pool: 'acme.my_custom_pool'
+```
+
+The above configuration will define a client `my_custom_client` which uses a custom connection pool service `acme.my_custom_pool`.
 
 ## Usage
 
