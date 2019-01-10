@@ -8,6 +8,7 @@ use Composer\CaBundle\CaBundle;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 use Markup\ElasticsearchBundle\ConnectionPool\ConnectionPoolProvider;
+use Markup\ElasticsearchBundle\ConnectionPool\SelectorProvider;
 use Markup\ElasticsearchBundle\DataCollector\TracerLogger;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -24,6 +25,11 @@ class ClientFactory
      * @var ConnectionPoolProvider
      */
     private $connectionPoolProvider;
+
+    /**
+     * @var SelectorProvider
+     */
+    private $connectionSelectorProvider;
 
     /**
      * @var LoggerInterface
@@ -43,12 +49,14 @@ class ClientFactory
     public function __construct(
         ServiceLocator $serviceLocator,
         ConnectionPoolProvider $connectionPoolProvider,
+        SelectorProvider $connectionSelectorProvider,
         ?TracerLogger $tracer = null,
         ?int $retries = null,
         ?bool $useCaBundle = false
     ) {
         $this->serviceLocator = $serviceLocator;
         $this->connectionPoolProvider = $connectionPoolProvider;
+        $this->connectionSelectorProvider = $connectionSelectorProvider;
         $this->tracer = $tracer ?? new NullLogger();
         $this->retries = $retries;
         $this->useCaBundle = (bool) $useCaBundle;
@@ -57,6 +65,7 @@ class ClientFactory
     public function create(
         array $hosts = [],
         ?string $connectionPool = null,
+        ?string $connectionSelector = null,
         ?string $sslCertFile = null): Client
     {
         $clientBuilder = ClientBuilder::create()
@@ -75,7 +84,10 @@ class ClientFactory
             $clientBuilder->setSSLVerification($cert);
         }
         if (null !== $connectionPool) {
-            $clientBuilder->setConnectionPool($this->connectionPoolProvider->retrieveConnectionPool($connectionPool));
+            $clientBuilder->setConnectionPool($this->connectionPoolProvider->retrieveConnectionPool($connectionPool), []);
+        }
+        if (null !== $connectionSelector) {
+            $clientBuilder->setSelector($this->connectionSelectorProvider->retrieveSelector($connectionSelector));
         }
 
         return $clientBuilder->build();

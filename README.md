@@ -96,7 +96,7 @@ markup_elasticsearch:
 
 You can define connection pools on a per-client basis, either using the `ConnectionPoolInterface` implementations from the Elasticsearch SDK, or a custom connection pool service.
 
-The built-in connection pools are `staticNoPing` (the default), `static`, `simple` and `sniffing`.
+The [built-in connection pools](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_connection_pool.html) are `static_no_ping` (the default), `static`, `simple` and `sniffing`.
 
 ```yaml
 markup_elasticsearch:
@@ -117,6 +117,32 @@ markup_elasticsearch:
 ```
 
 The above configuration will define a client `my_custom_client` which uses a custom connection pool service `acme.my_custom_pool`.
+
+### Connection selectors
+
+You can define [connection selectors](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_selectors.html) on a per-client basis, either using the `SelectorInterface` implementations from the Elasticsearch SDK, or a custom connection selector service.
+
+The built-in connection selectors are `round_robin` (default), `sticky_round_robin` and `random`.
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_selector_client:
+            connection_selector: sticky_round_robin
+```
+
+The above configuration will define a client `my_selector_client` which uses the [in-built sticky round-robin](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_selectors.html#_stickyroundrobinselector) connection selector implementation.
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_custom_selector_client:
+            connection_selector: coin_toss
+    custom_connection_selectors:
+        coin_toss: 'acme.coin_toss_selector'
+```
+
+The above configuration will define a client `my_custom_selector_client` which uses a custom connection selector service `acme.coin_toss_selector`.
 
 ## Usage
 

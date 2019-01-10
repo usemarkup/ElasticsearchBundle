@@ -5,6 +5,7 @@ namespace Markup\ElasticsearchBundle\DependencyInjection;
 use Composer\CaBundle\CaBundle;
 use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\ConnectionPool\ConnectionPoolProvider;
+use Markup\ElasticsearchBundle\ConnectionPool\SelectorProvider;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
 use Markup\ElasticsearchBundle\ServiceLocator;
 use Markup\ElasticsearchBundle\Twig\KibanaLinkExtension;
@@ -36,6 +37,7 @@ class MarkupElasticsearchExtension extends Extension
 
         $this->configureClients($config, $container);
         $this->configureCustomConnectionPools($config, $container);
+        $this->configureCustomConnectionSelectors($config, $container);
         $this->configureGeneralServices($config, $container);
         $this->configureGeneralSettings($config, $container);
         $this->configureTracerLogger($container);
@@ -45,13 +47,16 @@ class MarkupElasticsearchExtension extends Extension
     private function configureClients(array $config, ContainerBuilder $container)
     {
         $knownConnectionPoolNames = array_keys($config['custom_connection_pools']);
+        $knownConnectionSelectorNames = array_keys($config['custom_connection_selectors']);
         foreach ($config['clients'] as $clientName => $clientConfig) {
             $this->ensureConnectionPoolResolvable($clientConfig['connection_pool'], $knownConnectionPoolNames);
+            $this->ensureConnectionSelectorResolvable($clientConfig['connection_selector'], $knownConnectionSelectorNames);
             $client = (new Definition(\Elasticsearch\Client::class))
                 ->setFactory([new Reference(ClientFactory::class), 'create'])
                 ->setArguments([
                     $clientConfig['nodes'],
                     $clientConfig['connection_pool'],
+                    $clientConfig['connection_selector'],
                     $clientConfig['ssl_cert']
                 ])
                 ->setPrivate(true);
@@ -89,7 +94,7 @@ class MarkupElasticsearchExtension extends Extension
         );
     }
 
-    private function configureCustomConnectionPools(array $config, ContainerBuilder $container)
+    private function configureCustomConnectionPools(array $config, ContainerBuilder $container): void
     {
         $poolProvider = $container->findDefinition(ConnectionPoolProvider::class);
         $serviceLocator = (new Definition(SymfonyServiceLocator::class))
@@ -106,7 +111,29 @@ class MarkupElasticsearchExtension extends Extension
         $serviceLocatorId = 'markup_elasticsearch.custom_connection_pool.locator';
         $container->setDefinition($serviceLocatorId, $serviceLocator);
         $poolProvider->setArgument(
-            '$customServiceLocator',
+            '$customPoolLocator',
+            new Reference($serviceLocatorId)
+        );
+    }
+
+    private function configureCustomConnectionSelectors(array $config, ContainerBuilder $container): void
+    {
+        $selectorProvider = $container->findDefinition(SelectorProvider::class);
+        $serviceLocator = (new Definition(SymfonyServiceLocator::class))
+            ->addTag('container.service_locator')
+            ->setArguments([
+                array_map(
+                    function (string $selectorServiceId) {
+                        return new Reference($selectorServiceId);
+                    },
+                    $config['custom_connection_selectors']
+                )
+            ])
+            ->setPublic(false);
+        $serviceLocatorId = 'markup_elasticsearch.custom_connection_selector.locator';
+        $container->setDefinition($serviceLocatorId, $serviceLocator);
+        $selectorProvider->setArgument(
+            '$customSelectorLocator',
             new Reference($serviceLocatorId)
         );
     }
@@ -136,6 +163,24 @@ class MarkupElasticsearchExtension extends Extension
             throw new \LogicException(
                 sprintf(
                     'The connection pool name "%s" is not known. Did you forget to register a custom connection pool service?',
+                    $nameToTest
+                )
+            );
+        }
+    }
+
+    /**
+     * @throws \LogicException if a connection selector name is used that is not defined
+     */
+    private function ensureConnectionSelectorResolvable(?string $nameToTest, array $knownNames): void
+    {
+        if ($nameToTest === null) {
+            return;
+        }
+        if (!in_array($nameToTest, array_keys(SelectorProvider::KNOWN_SELECTORS)) && !in_array($nameToTest, $knownNames)) {
+            throw new \LogicException(
+                sprintf(
+                    'The connection selector name "%s" is not known. Did you forget to register a custom connection selector?',
                     $nameToTest
                 )
             );
