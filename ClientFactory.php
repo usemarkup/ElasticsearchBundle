@@ -10,6 +10,7 @@ use Elasticsearch\ClientBuilder;
 use Markup\ElasticsearchBundle\DataCollector\TracerLogger;
 use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
 use Markup\ElasticsearchBundle\Provider\SelectorProvider;
+use Markup\ElasticsearchBundle\Provider\SerializerProvider;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -32,6 +33,11 @@ class ClientFactory
     private $connectionSelectorProvider;
 
     /**
+     * @var SerializerProvider
+     */
+    private $serializerProvider;
+
+    /**
      * @var LoggerInterface
      */
     private $tracer;
@@ -50,6 +56,7 @@ class ClientFactory
         ServiceLocator $serviceLocator,
         ConnectionPoolProvider $connectionPoolProvider,
         SelectorProvider $connectionSelectorProvider,
+        SerializerProvider $serializerProvider,
         ?TracerLogger $tracer = null,
         ?int $retries = null,
         ?bool $useCaBundle = false
@@ -57,6 +64,7 @@ class ClientFactory
         $this->serviceLocator = $serviceLocator;
         $this->connectionPoolProvider = $connectionPoolProvider;
         $this->connectionSelectorProvider = $connectionSelectorProvider;
+        $this->serializerProvider = $serializerProvider;
         $this->tracer = $tracer ?? new NullLogger();
         $this->retries = $retries;
         $this->useCaBundle = (bool) $useCaBundle;
@@ -66,6 +74,7 @@ class ClientFactory
         array $hosts = [],
         ?string $connectionPool = null,
         ?string $connectionSelector = null,
+        ?string $serializer = null,
         ?string $sslCertFile = null): Client
     {
         $clientBuilder = ClientBuilder::create()
@@ -88,6 +97,9 @@ class ClientFactory
         }
         if (null !== $connectionSelector) {
             $clientBuilder->setSelector($this->connectionSelectorProvider->retrieveSelector($connectionSelector));
+        }
+        if (null !== $serializer) {
+            $clientBuilder->setSerializer($this->serializerProvider->retrieveSerializer($serializer));
         }
 
         return $clientBuilder->build();

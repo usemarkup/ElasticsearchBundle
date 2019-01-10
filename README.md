@@ -144,6 +144,34 @@ markup_elasticsearch:
 
 The above configuration will define a client `my_custom_selector_client` which uses a custom connection selector service `acme.coin_toss_selector`.
 
+### Serializers
+
+It is not expected that one would need to configure this, but provided for the sake of completeness:
+
+You can define [serializers](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_serializers.html) on a per-client basis, either using the `SerializerInterface` implementations from the Elasticsearch SDK, or a custom serializer service implementing that interface.
+
+The built-in serializers are `smart` (default), `array_to_json` and `everything_to_json`.
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_serializer_client:
+            serializer: everything_to_json
+```
+
+The above configuration will define a client `my_serializer_client` which uses the [in-built everything to JSON](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_serializers.html#_everythingtojsonserializer) serializer implementation.
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_custom_serializer_client:
+            serializer: mangled
+    custom_serializers:
+        mangle: 'acme.mangled_serializer'
+```
+
+The above configuration will define a client `my_custom_serializer_client` which uses a custom serializer service `acme.mangled_serializer`.
+
 ## Usage
 
 Clients as defined above are provided as instances of \Elasticsearch\Client. Usage from that point is as per the [Elasticsearch PHP SDK documentation](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_quickstart.html).
