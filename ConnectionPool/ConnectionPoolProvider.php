@@ -3,11 +3,7 @@ declare(strict_types=1);
 
 namespace Markup\ElasticsearchBundle\ConnectionPool;
 
-use Elasticsearch\ConnectionPool\AbstractConnectionPool;
-use Elasticsearch\ConnectionPool\SimpleConnectionPool;
-use Elasticsearch\ConnectionPool\SniffingConnectionPool;
-use Elasticsearch\ConnectionPool\StaticConnectionPool;
-use Elasticsearch\ConnectionPool\StaticNoPingConnectionPool;
+use Elasticsearch\ConnectionPool;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -16,35 +12,40 @@ use Psr\Container\ContainerInterface;
 class ConnectionPoolProvider
 {
     const KNOWN_POOLS = [
-        'static_no_ping' => StaticNoPingConnectionPool::class,
-        'static' => StaticConnectionPool::class,
-        'simple' => SimpleConnectionPool::class,
-        'sniffing' => SniffingConnectionPool::class,
+        'static_no_ping' => ConnectionPool\StaticNoPingConnectionPool::class,
+        'static' => ConnectionPool\StaticConnectionPool::class,
+        'simple' => ConnectionPool\SimpleConnectionPool::class,
+        'sniffing' => ConnectionPool\SniffingConnectionPool::class,
     ];
 
     /**
      * @var ContainerInterface
      */
-    private $customServiceLocator;
+    private $customPoolLocator;
 
-    public function __construct(ContainerInterface $customServiceLocator)
+    public function __construct(ContainerInterface $customPoolLocator)
     {
-        $this->customServiceLocator = $customServiceLocator;
+        $this->customPoolLocator = $customPoolLocator;
     }
 
     /**
      * @param string $poolName
-     * @return AbstractConnectionPool|string
+     * @return ConnectionPool\AbstractConnectionPool|string
      */
     public function retrieveConnectionPool(string $poolName)
     {
         if (array_key_exists($poolName, self::KNOWN_POOLS)) {
             return self::KNOWN_POOLS[$poolName];
         }
-        if (!$this->customServiceLocator->has($poolName)) {
-            throw new \LogicException(sprintf('Client expected unknown connection pool "%s".', $poolName));
+        if (!$this->customPoolLocator->has($poolName)) {
+            throw new \LogicException(
+                sprintf(
+                    'Client expected unknown Elasticsearch connection pool "%s".',
+                    $poolName
+                )
+            );
         }
 
-        return $this->customServiceLocator->get($poolName);
+        return $this->customPoolLocator->get($poolName);
     }
 }
