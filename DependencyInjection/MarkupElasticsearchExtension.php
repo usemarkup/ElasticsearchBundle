@@ -7,6 +7,7 @@ use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
 use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
 use Markup\ElasticsearchBundle\Provider\SelectorProvider;
+use Markup\ElasticsearchBundle\Provider\SerializerProvider;
 use Markup\ElasticsearchBundle\ServiceLocator;
 use Markup\ElasticsearchBundle\Twig\KibanaLinkExtension;
 use Symfony\Component\Config\FileLocator;
@@ -38,6 +39,7 @@ class MarkupElasticsearchExtension extends Extension
         $this->configureClients($config, $container);
         $this->configureCustomConnectionPools($config, $container);
         $this->configureCustomConnectionSelectors($config, $container);
+        $this->configureCustomSerializers($config, $container);
         $this->configureGeneralServices($config, $container);
         $this->configureGeneralSettings($config, $container);
         $this->configureTracerLogger($container);
@@ -48,15 +50,18 @@ class MarkupElasticsearchExtension extends Extension
     {
         $knownConnectionPoolNames = array_keys($config['custom_connection_pools']);
         $knownConnectionSelectorNames = array_keys($config['custom_connection_selectors']);
+        $knownSerializerNames = array_keys($config['custom_serializers']);
         foreach ($config['clients'] as $clientName => $clientConfig) {
             $this->ensureConnectionPoolResolvable($clientConfig['connection_pool'], $knownConnectionPoolNames);
             $this->ensureConnectionSelectorResolvable($clientConfig['connection_selector'], $knownConnectionSelectorNames);
+            $this->ensureSerializerResolvable($clientConfig['serializer'], $knownSerializerNames);
             $client = (new Definition(\Elasticsearch\Client::class))
                 ->setFactory([new Reference(ClientFactory::class), 'create'])
                 ->setArguments([
                     $clientConfig['nodes'],
                     $clientConfig['connection_pool'],
                     $clientConfig['connection_selector'],
+                    $clientConfig['serializer'],
                     $clientConfig['ssl_cert']
                 ])
                 ->setPrivate(true);
@@ -138,6 +143,28 @@ class MarkupElasticsearchExtension extends Extension
         );
     }
 
+    private function configureCustomSerializers(array $config, ContainerBuilder $container): void
+    {
+        $serializerProvider = $container->findDefinition(SerializerProvider::class);
+        $serviceLocator = (new Definition(SymfonyServiceLocator::class))
+            ->addTag('container.service_locator')
+            ->setArguments([
+                array_map(
+                    function (string $serializerServiceId) {
+                        return new Reference($serializerServiceId);
+                    },
+                    $config['custom_serializers']
+                )
+            ])
+            ->setPublic(false);
+        $serviceLocatorId = 'markup.elasticsearch.custom_serializer.locator';
+        $container->setDefinition($serviceLocatorId, $serviceLocator);
+        $serializerProvider->setArgument(
+            '$customSerializerLocator',
+            new Reference($serviceLocatorId)
+        );
+    }
+
     private function registerKibanaServices(array $config, ContainerBuilder $container)
     {
         if (!$container->getParameter('kernel.debug')) {
@@ -156,17 +183,12 @@ class MarkupElasticsearchExtension extends Extension
      */
     private function ensureConnectionPoolResolvable(?string $nameToTest, array $knownNames): void
     {
-        if ($nameToTest === null) {
-            return;
-        }
-        if (!in_array($nameToTest, array_keys(ConnectionPoolProvider::KNOWN_POOLS)) && !in_array($nameToTest, $knownNames)) {
-            throw new \LogicException(
-                sprintf(
-                    'The connection pool name "%s" is not known. Did you forget to register a custom connection pool service?',
-                    $nameToTest
-                )
-            );
-        }
+        $this->ensureServiceNamesResolvable(
+            $nameToTest,
+            ConnectionPoolProvider::KNOWN_POOLS,
+            $knownNames,
+            'The connection pool name "%s" is not known. Did you forget to register a custom connection pool service?'
+        );
     }
 
     /**
@@ -174,16 +196,35 @@ class MarkupElasticsearchExtension extends Extension
      */
     private function ensureConnectionSelectorResolvable(?string $nameToTest, array $knownNames): void
     {
+        $this->ensureServiceNamesResolvable(
+            $nameToTest,
+            SelectorProvider::KNOWN_SELECTORS,
+            $knownNames,
+            'The connection selector name "%s" is not known. Did you forget to register a custom connection selector?'
+        );
+    }
+
+    private function ensureSerializerResolvable(?string $nameToTest, array $knownNames): void
+    {
+        $this->ensureServiceNamesResolvable(
+            $nameToTest,
+            SerializerProvider::KNOWN_SERIALIZERS,
+            $knownNames,
+            'The serializer name "%s" is not known. Did you forget to register a custom serializer?'
+        );
+    }
+
+    private function ensureServiceNamesResolvable(
+        ?string $nameToTest,
+        array $inBuiltServices,
+        array $customNames,
+        string $messageTemplate
+    ): void {
         if ($nameToTest === null) {
             return;
         }
-        if (!in_array($nameToTest, array_keys(SelectorProvider::KNOWN_SELECTORS)) && !in_array($nameToTest, $knownNames)) {
-            throw new \LogicException(
-                sprintf(
-                    'The connection selector name "%s" is not known. Did you forget to register a custom connection selector?',
-                    $nameToTest
-                )
-            );
+        if (!in_array($nameToTest, array_keys($inBuiltServices)) && !in_array($nameToTest, $customNames)) {
+            throw new \LogicException(sprintf($messageTemplate, $nameToTest));
         }
     }
 }
