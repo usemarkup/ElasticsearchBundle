@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Markup\ElasticsearchBundle\Tests\ConnectionPool;
+namespace Markup\ElasticsearchBundle\Tests\Provider;
 
 use Elasticsearch\ConnectionPool\SimpleConnectionPool;
 use Elasticsearch\ConnectionPool\SniffingConnectionPool;
 use Elasticsearch\ConnectionPool\StaticConnectionPool;
 use Elasticsearch\ConnectionPool\StaticNoPingConnectionPool;
-use Markup\ElasticsearchBundle\ConnectionPool\ConnectionPoolProvider;
+use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 

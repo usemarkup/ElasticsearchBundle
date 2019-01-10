@@ -4,9 +4,9 @@ namespace Markup\ElasticsearchBundle\DependencyInjection;
 
 use Composer\CaBundle\CaBundle;
 use Markup\ElasticsearchBundle\ClientFactory;
-use Markup\ElasticsearchBundle\ConnectionPool\ConnectionPoolProvider;
-use Markup\ElasticsearchBundle\ConnectionPool\SelectorProvider;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
+use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
+use Markup\ElasticsearchBundle\Provider\SelectorProvider;
 use Markup\ElasticsearchBundle\ServiceLocator;
 use Markup\ElasticsearchBundle\Twig\KibanaLinkExtension;
 use Symfony\Component\Config\FileLocator;

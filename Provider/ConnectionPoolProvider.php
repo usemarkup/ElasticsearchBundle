@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Markup\ElasticsearchBundle\ConnectionPool;
+namespace Markup\ElasticsearchBundle\Provider;
 
 use Elasticsearch\ConnectionPool;
 use Psr\Container\ContainerInterface;

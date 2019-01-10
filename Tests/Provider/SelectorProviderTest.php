@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Markup\ElasticsearchBundle\Tests\ConnectionPool;
+namespace Markup\ElasticsearchBundle\Tests\Provider;
 
 use Elasticsearch\ConnectionPool\Selectors\RandomSelector;
 use Elasticsearch\ConnectionPool\Selectors\RoundRobinSelector;
 use Elasticsearch\ConnectionPool\Selectors\StickyRoundRobinSelector;
-use Markup\ElasticsearchBundle\ConnectionPool\SelectorProvider;
+use Markup\ElasticsearchBundle\Provider\SelectorProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 
