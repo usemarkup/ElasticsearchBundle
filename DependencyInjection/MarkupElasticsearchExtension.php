@@ -3,9 +3,11 @@
 namespace Markup\ElasticsearchBundle\DependencyInjection;
 
 use Composer\CaBundle\CaBundle;
+use Elasticsearch\ClientBuilder;
 use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
 use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
+use Markup\ElasticsearchBundle\Provider\HandlerProvider;
 use Markup\ElasticsearchBundle\Provider\SelectorProvider;
 use Markup\ElasticsearchBundle\Provider\SerializerProvider;
 use Markup\ElasticsearchBundle\ServiceLocator;
@@ -40,6 +42,7 @@ class MarkupElasticsearchExtension extends Extension
         $this->configureCustomConnectionPools($config, $container);
         $this->configureCustomConnectionSelectors($config, $container);
         $this->configureCustomSerializers($config, $container);
+        $this->configureCustomHandlers($config, $container);
         $this->configureGeneralServices($config, $container);
         $this->configureGeneralSettings($config, $container);
         $this->configureTracerLogger($container);
@@ -51,10 +54,12 @@ class MarkupElasticsearchExtension extends Extension
         $knownConnectionPoolNames = array_keys($config['custom_connection_pools']);
         $knownConnectionSelectorNames = array_keys($config['custom_connection_selectors']);
         $knownSerializerNames = array_keys($config['custom_serializers']);
+        $knownHandlerNames = array_keys($config['custom_handlers']);
         foreach ($config['clients'] as $clientName => $clientConfig) {
             $this->ensureConnectionPoolResolvable($clientConfig['connection_pool'], $knownConnectionPoolNames);
             $this->ensureConnectionSelectorResolvable($clientConfig['connection_selector'], $knownConnectionSelectorNames);
             $this->ensureSerializerResolvable($clientConfig['serializer'], $knownSerializerNames);
+            $this->ensureHandlerResolvable($clientConfig['handler'], $knownHandlerNames);
             $client = (new Definition(\Elasticsearch\Client::class))
                 ->setFactory([new Reference(ClientFactory::class), 'create'])
                 ->setArguments([
@@ -101,66 +106,96 @@ class MarkupElasticsearchExtension extends Extension
 
     private function configureCustomConnectionPools(array $config, ContainerBuilder $container): void
     {
-        $poolProvider = $container->findDefinition(ConnectionPoolProvider::class);
-        $serviceLocator = (new Definition(SymfonyServiceLocator::class))
-            ->addTag('container.service_locator')
-            ->setArguments([
-                array_map(
-                    function (string $poolServiceId) {
-                        return new Reference($poolServiceId);
-                    },
-                    $config['custom_connection_pools']
-                )
-            ])
-            ->setPublic(false);
-        $serviceLocatorId = 'markup_elasticsearch.custom_connection_pool.locator';
-        $container->setDefinition($serviceLocatorId, $serviceLocator);
-        $poolProvider->setArgument(
-            '$customPoolLocator',
-            new Reference($serviceLocatorId)
+        $this->configureCustomServiceProviders(
+            $config,
+            $container,
+            ConnectionPoolProvider::class,
+            'connection_pool',
+            'custom_connection_pools',
+            '$customPoolLocator'
         );
     }
 
     private function configureCustomConnectionSelectors(array $config, ContainerBuilder $container): void
     {
-        $selectorProvider = $container->findDefinition(SelectorProvider::class);
-        $serviceLocator = (new Definition(SymfonyServiceLocator::class))
-            ->addTag('container.service_locator')
-            ->setArguments([
-                array_map(
-                    function (string $selectorServiceId) {
-                        return new Reference($selectorServiceId);
-                    },
-                    $config['custom_connection_selectors']
-                )
-            ])
-            ->setPublic(false);
-        $serviceLocatorId = 'markup_elasticsearch.custom_connection_selector.locator';
-        $container->setDefinition($serviceLocatorId, $serviceLocator);
-        $selectorProvider->setArgument(
-            '$customSelectorLocator',
-            new Reference($serviceLocatorId)
+        $this->configureCustomServiceProviders(
+            $config,
+            $container,
+            SelectorProvider::class,
+            'connection_selector',
+            'custom_connection_selectors',
+            '$customSelectorLocator'
         );
     }
 
     private function configureCustomSerializers(array $config, ContainerBuilder $container): void
     {
-        $serializerProvider = $container->findDefinition(SerializerProvider::class);
+        $this->configureCustomServiceProviders(
+            $config,
+            $container,
+            SerializerProvider::class,
+            'serializer',
+            'custom_serializers',
+            '$customSerializerLocator'
+        );
+    }
+
+    private function configureCustomHandlers(array $config, ContainerBuilder $container): void
+    {
+        $inbuiltHandlers = $this->getKnownHandlerNames();
+        $handlerFactoryIds = [];
+        foreach ($inbuiltHandlers as $inbuiltHandler) {
+            $handlerFactoryIds[$inbuiltHandler] = sprintf('markup_elasticsearch.handler_factory.%s', $inbuiltHandler);
+            $container->setDefinition($handlerFactoryIds[$inbuiltHandler], $this->makeHandlerFactoryDefinition($inbuiltHandler.'Handler'));
+        }
+        $this->configureCustomServiceProviders(
+            $config,
+            $container,
+            HandlerProvider::class,
+            'handler',
+            'custom_handlers',
+            '$customHandlerLocator',
+            $handlerFactoryIds
+        );
+    }
+
+    private function getKnownHandlerNames(): array
+    {
+        return ['default', 'single', 'multi'];
+    }
+
+    private function makeHandlerFactoryDefinition(string $builderMethod)
+    {
+        return (new Definition(\Closure::class))
+            ->setFactory([ClientBuilder::class, $builderMethod])
+            ->setPublic(false);
+    }
+
+    private function configureCustomServiceProviders(
+        array $config,
+        ContainerBuilder $container,
+        string $providerClass,
+        string $providerServicePrefix,
+        string $customConfigNode,
+        string $constructorArg,
+        array $additionalLocatorServices = []
+    ): void {
+        $provider = $container->findDefinition($providerClass);
         $serviceLocator = (new Definition(SymfonyServiceLocator::class))
             ->addTag('container.service_locator')
             ->setArguments([
                 array_map(
-                    function (string $serializerServiceId) {
-                        return new Reference($serializerServiceId);
+                    function (string $serviceId) {
+                        return new Reference($serviceId);
                     },
-                    $config['custom_serializers']
+                    array_merge($config[$customConfigNode], $additionalLocatorServices)
                 )
             ])
             ->setPublic(false);
-        $serviceLocatorId = 'markup.elasticsearch.custom_serializer.locator';
+        $serviceLocatorId = sprintf('markup_elasticsearch.custom_%s.locator', $providerServicePrefix);
         $container->setDefinition($serviceLocatorId, $serviceLocator);
-        $serializerProvider->setArgument(
-            '$customSerializerLocator',
+        $provider->setArgument(
+            $constructorArg,
             new Reference($serviceLocatorId)
         );
     }
@@ -211,6 +246,16 @@ class MarkupElasticsearchExtension extends Extension
             SerializerProvider::KNOWN_SERIALIZERS,
             $knownNames,
             'The serializer name "%s" is not known. Did you forget to register a custom serializer?'
+        );
+    }
+
+    private function ensureHandlerResolvable(?string $nameToTest, array $knownNames): void
+    {
+        $this->ensureServiceNamesResolvable(
+            $nameToTest,
+            array_fill_keys($this->getKnownHandlerNames(), true),
+            $knownNames,
+            'The handler name "%s" is not known. Did you forget to register a custom handler?'
         );
     }
 
