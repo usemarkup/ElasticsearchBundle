@@ -172,6 +172,34 @@ markup_elasticsearch:
 
 The above configuration will define a client `my_custom_serializer_client` which uses a custom serializer service `acme.mangled_serializer`.
 
+### Handlers
+
+It is not expected that one would need to configure this, but provided for the sake of completeness:
+
+The Elasticsearch SDK uses [RingPHP](https://github.com/guzzle/RingPHP/) HTTP handlers under the hood. Generally the default handler is fine for most cases, but there may be small performance gains etc to be had using a different, or even custom, handler. [The Elasticsearch SDK docs on handlers](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_configuration.html#_configure_the_http_handler) has more information.
+
+The built-in RingPHP-compatible handlers are `default` (default), `single` and `multi`.
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_handler_client:
+            handler: multi
+```
+
+The above configuration will define a client `my_handler_client` which uses an in-built handler able to make multiple calls concurrently. (The default handler also does this, but has some logic to determine when to use it.)
+
+```yaml
+markup_elasticsearch:
+    clients:
+        my_custom_handler_client:
+            handler: edison
+    custom_handlers:
+        edison: 'acme.edison_handler'
+```
+
+The above configuration will define a client `my_custom_handler_client` which uses a custom RingPHP handler service `acme.edison_handler` that seems to be named after Thomas Edison. For more information about writing a RingPHP HTTP handler, [read the project's documentation on handlers](http://guzzle.readthedocs.org/en/latest/handlers.html).
+
 ## Usage
 
 Clients as defined above are provided as instances of \Elasticsearch\Client. Usage from that point is as per the [Elasticsearch PHP SDK documentation](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_quickstart.html).
