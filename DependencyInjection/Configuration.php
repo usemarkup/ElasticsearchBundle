@@ -109,6 +109,9 @@ class Configuration implements ConfigurationInterface
                     ->scalarPrototype()
                     ->end()
                 ->end()
+                ->scalarNode('endpoint_closure')
+                    ->defaultNull()
+                ->end()
             ->end();
 
         return $treeBuilder;

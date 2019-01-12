@@ -55,6 +55,11 @@ class ClientFactory
     private $tracer;
 
     /**
+     * @var ?callable
+     */
+    private $endpointClosure;
+
+    /**
      * @var ?int
      */
     private $retries;
@@ -72,6 +77,7 @@ class ClientFactory
         HandlerProvider $handlerProvider,
         ConnectionFactoryProvider $connectionFactoryProvider,
         ?TracerLogger $tracer = null,
+        ?callable $endpointClosure = null,
         ?int $retries = null,
         ?bool $useCaBundle = false
     ) {
@@ -82,6 +88,7 @@ class ClientFactory
         $this->handlerProvider = $handlerProvider;
         $this->connectionFactoryProvider = $connectionFactoryProvider;
         $this->tracer = $tracer ?? new NullLogger();
+        $this->endpointClosure = $endpointClosure;
         $this->retries = $retries;
         $this->useCaBundle = (bool) $useCaBundle;
     }
@@ -126,6 +133,9 @@ class ClientFactory
             $clientBuilder->setConnectionFactory(
                 $this->connectionFactoryProvider->retrieveConnectionFactory($connectionFactory)
             );
+        }
+        if (null !== $this->endpointClosure) {
+            $clientBuilder->setEndpoint($this->endpointClosure);
         }
 
         return $clientBuilder->build();
