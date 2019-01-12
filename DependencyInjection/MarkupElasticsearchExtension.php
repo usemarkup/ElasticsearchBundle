@@ -45,6 +45,7 @@ class MarkupElasticsearchExtension extends Extension
         $this->configureCustomSerializers($config, $container);
         $this->configureCustomHandlers($config, $container);
         $this->configureCustomConnectionFactories($config, $container);
+        $this->configureEndpointClosure($config['endpoint_closure'], $container);
         $this->configureGeneralServices($config, $container);
         $this->configureGeneralSettings($config, $container);
         $this->configureTracerLogger($container);
@@ -228,6 +229,16 @@ class MarkupElasticsearchExtension extends Extension
         $definition->setArgument('$kibanaHost', $config['host']);
         $definition->setArgument('$shouldLinkToKibana', $config['should_link_from_profiler']);
         $definition->addTag('twig.extension');
+    }
+
+    private function configureEndpointClosure(?string $endpointClosureService, ContainerBuilder $container)
+    {
+        $container->findDefinition(ClientFactory::class)
+            ->setArgument(
+                '$endpointClosure',
+                ($endpointClosureService) ? new Reference($endpointClosureService) : null
+            );
+
     }
 
     /**

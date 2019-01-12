@@ -91,6 +91,7 @@ markup_elasticsearch:
 ```
 
 - `retries` You can set the number of retries that the client will make against an Elasticsearch instance. If this number is not specified, the default behaviour is use the number of nodes in the cluster that a client is connecting to.
+- `endpoint_closure` Although it's an extremely brittle extension point, the Elasticsearch SDK allows definition of an endpoint closure for providing different logic for resolving endpoints. For details and caveats, see the [documentation for this](https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/_configuration.html#_set_the_endpoint_closure). A configuration value should be a service that is a `callable` - typically an object with a defined `__invoke` method.
 
 ### Connection pools
 
