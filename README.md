@@ -14,7 +14,7 @@ requiring the`markup/elasticsearch-bundle` package in your project's `composer.j
 ```json
 {
     "require": {
-        "markup/elasticsearch-bundle": "~0.2"
+        "markup/elasticsearch-bundle": "^1@beta"
     }
 }
 ```
