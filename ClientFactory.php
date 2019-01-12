@@ -8,6 +8,7 @@ use Composer\CaBundle\CaBundle;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 use Markup\ElasticsearchBundle\DataCollector\TracerLogger;
+use Markup\ElasticsearchBundle\Provider\ConnectionFactoryProvider;
 use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
 use Markup\ElasticsearchBundle\Provider\HandlerProvider;
 use Markup\ElasticsearchBundle\Provider\SelectorProvider;
@@ -44,6 +45,11 @@ class ClientFactory
     private $handlerProvider;
 
     /**
+     * @var ConnectionFactoryProvider
+     */
+    private $connectionFactoryProvider;
+
+    /**
      * @var LoggerInterface
      */
     private $tracer;
@@ -64,6 +70,7 @@ class ClientFactory
         SelectorProvider $connectionSelectorProvider,
         SerializerProvider $serializerProvider,
         HandlerProvider $handlerProvider,
+        ConnectionFactoryProvider $connectionFactoryProvider,
         ?TracerLogger $tracer = null,
         ?int $retries = null,
         ?bool $useCaBundle = false
@@ -73,6 +80,7 @@ class ClientFactory
         $this->connectionSelectorProvider = $connectionSelectorProvider;
         $this->serializerProvider = $serializerProvider;
         $this->handlerProvider = $handlerProvider;
+        $this->connectionFactoryProvider = $connectionFactoryProvider;
         $this->tracer = $tracer ?? new NullLogger();
         $this->retries = $retries;
         $this->useCaBundle = (bool) $useCaBundle;
@@ -84,6 +92,7 @@ class ClientFactory
         ?string $connectionSelector = null,
         ?string $serializer = null,
         ?string $handler = null,
+        ?string $connectionFactory = null,
         ?string $sslCertFile = null): Client
     {
         $clientBuilder = ClientBuilder::create()
@@ -112,6 +121,11 @@ class ClientFactory
         }
         if (null !== $handler) {
             $clientBuilder->setHandler($this->handlerProvider->retrieveHandler($handler));
+        }
+        if (null !== $connectionFactory) {
+            $clientBuilder->setConnectionFactory(
+                $this->connectionFactoryProvider->retrieveConnectionFactory($connectionFactory)
+            );
         }
 
         return $clientBuilder->build();
