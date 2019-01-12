@@ -6,6 +6,7 @@ use Composer\CaBundle\CaBundle;
 use Elasticsearch\ClientBuilder;
 use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
+use Markup\ElasticsearchBundle\Provider\ConnectionFactoryProvider;
 use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
 use Markup\ElasticsearchBundle\Provider\HandlerProvider;
 use Markup\ElasticsearchBundle\Provider\SelectorProvider;
@@ -43,6 +44,7 @@ class MarkupElasticsearchExtension extends Extension
         $this->configureCustomConnectionSelectors($config, $container);
         $this->configureCustomSerializers($config, $container);
         $this->configureCustomHandlers($config, $container);
+        $this->configureCustomConnectionFactories($config, $container);
         $this->configureGeneralServices($config, $container);
         $this->configureGeneralSettings($config, $container);
         $this->configureTracerLogger($container);
@@ -55,11 +57,13 @@ class MarkupElasticsearchExtension extends Extension
         $knownConnectionSelectorNames = array_keys($config['custom_connection_selectors']);
         $knownSerializerNames = array_keys($config['custom_serializers']);
         $knownHandlerNames = array_keys($config['custom_handlers']);
+        $knownConnectionFactoryNames = array_keys($config['custom_connection_factories']);
         foreach ($config['clients'] as $clientName => $clientConfig) {
             $this->ensureConnectionPoolResolvable($clientConfig['connection_pool'], $knownConnectionPoolNames);
             $this->ensureConnectionSelectorResolvable($clientConfig['connection_selector'], $knownConnectionSelectorNames);
             $this->ensureSerializerResolvable($clientConfig['serializer'], $knownSerializerNames);
             $this->ensureHandlerResolvable($clientConfig['handler'], $knownHandlerNames);
+            $this->ensureConnectionFactoriesResolvable($clientConfig['connection_factory'], $knownConnectionFactoryNames);
             $client = (new Definition(\Elasticsearch\Client::class))
                 ->setFactory([new Reference(ClientFactory::class), 'create'])
                 ->setArguments([
@@ -67,6 +71,7 @@ class MarkupElasticsearchExtension extends Extension
                     $clientConfig['connection_pool'],
                     $clientConfig['connection_selector'],
                     $clientConfig['serializer'],
+                    $clientConfig['connection_factory'],
                     $clientConfig['ssl_cert']
                 ])
                 ->setPrivate(true);
@@ -137,6 +142,18 @@ class MarkupElasticsearchExtension extends Extension
             'serializer',
             'custom_serializers',
             '$customSerializerLocator'
+        );
+    }
+
+    private function configureCustomConnectionFactories(array $config, ContainerBuilder $container): void
+    {
+        $this->configureCustomServiceProviders(
+            $config,
+            $container,
+            ConnectionFactoryProvider::class,
+            'connection_factory',
+            'custom_connection_factories',
+            '$customConnectionFactoryLocator'
         );
     }
 
@@ -256,6 +273,16 @@ class MarkupElasticsearchExtension extends Extension
             array_fill_keys($this->getKnownHandlerNames(), true),
             $knownNames,
             'The handler name "%s" is not known. Did you forget to register a custom handler?'
+        );
+    }
+
+    private function ensureConnectionFactoriesResolvable(?string $nameToTest, array $knownNames): void
+    {
+        $this->ensureServiceNamesResolvable(
+            $nameToTest,
+            [],
+            $knownNames,
+            'The connection factory name "%s" is not known. Did you forget to register a custom connection factory?'
         );
     }
 
