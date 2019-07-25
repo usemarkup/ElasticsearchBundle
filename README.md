@@ -9,12 +9,16 @@ A Symfony bundle providing simple integration with the [Elasticsearch PHP SDK](h
 ## Installation
 
 The Markup Elasticsearch bundle can be installed via [Composer](http://getcomposer.org) by 
-requiring the`markup/elasticsearch-bundle` package in your project's `composer.json`:
+requiring the`markup/elasticsearch-bundle` package in your project's `composer.json`, as well
+as __specifying the correct version of the Elasticsearch SDK for the version of Elastic Stack you
+are using__ (e.g. use 6.x releases for 6.x releases of Elastic Stack, and 7.x releases for 7.x
+releases):
 
 ```json
 {
     "require": {
-        "markup/elasticsearch-bundle": "^1"
+        "markup/elasticsearch-bundle": "^2",
+        "elasticsearch/elasticsearch": "^7" //if you are using Elastic Stack 7.x versions
     }
 }
 ```

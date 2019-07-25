@@ -5,7 +5,7 @@
     "keywords": ["elasticsearch", "client", "symfony", "bundle", "search"],
     "require": {
         "php": "^7.1",
-        "elasticsearch/elasticsearch": "^6",
+        "elasticsearch/elasticsearch": "^6|^7",
         "symfony/framework-bundle": "^3.4|^4",
         "markup/json": "^0.1"
     },
