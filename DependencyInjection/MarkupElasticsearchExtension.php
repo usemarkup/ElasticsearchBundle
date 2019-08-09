@@ -6,6 +6,7 @@ use Composer\CaBundle\CaBundle;
 use Elasticsearch\ClientBuilder;
 use Markup\ElasticsearchBundle\ClientFactory;
 use Markup\ElasticsearchBundle\DataCollector\ElasticDataCollector;
+use Markup\ElasticsearchBundle\DataCollector\TracerLogger;
 use Markup\ElasticsearchBundle\Provider\ConnectionFactoryProvider;
 use Markup\ElasticsearchBundle\Provider\ConnectionPoolProvider;
 use Markup\ElasticsearchBundle\Provider\HandlerProvider;
@@ -15,6 +16,7 @@ use Markup\ElasticsearchBundle\ServiceLocator;
 use Markup\ElasticsearchBundle\Twig\KibanaLinkExtension;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Loader;
 use Symfony\Component\DependencyInjection\Reference;
@@ -100,6 +102,11 @@ class MarkupElasticsearchExtension extends Extension
 
     private function configureTracerLogger(ContainerBuilder $container)
     {
+        if (!$this->hasBundle($container, 'WebProfilerBundle')) {
+            $container->removeDefinition(TracerLogger::class);
+
+            return;
+        }
         $collector = $container->findDefinition(ElasticDataCollector::class);
         $collector->addTag(
             'data_collector',
@@ -309,5 +316,16 @@ class MarkupElasticsearchExtension extends Extension
         if (!in_array($nameToTest, array_keys($inBuiltServices)) && !in_array($nameToTest, $customNames)) {
             throw new \LogicException(sprintf($messageTemplate, $nameToTest));
         }
+    }
+
+    private function hasBundle(ContainerInterface $container, $bundle): bool
+    {
+        if (!$container->hasParameter('kernel.bundles')) {
+            return false;
+        }
+
+        $bundles = $container->getParameter('kernel.bundles');
+
+        return isset($bundles[$bundle]);
     }
 }
